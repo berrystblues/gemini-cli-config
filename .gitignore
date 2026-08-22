@@ -19,3 +19,6 @@ ecc-install-state.json
 
 # Skills are managed externally (symlinked from ~/.agents/skills)
 skills/
+
+# CLI-internal scripts (auto-update, package manager) — not part of our config
+scripts/

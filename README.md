@@ -75,9 +75,22 @@ Gemini 3.7 Flash supports three thinking levels (no `minimal` — that was remov
 
 To change the thinking level, edit `modelConfigs.aliases["gemini-3.7-flash"].modelConfig.generateContentConfig.thinkingConfig.thinkingLevel` in `settings.json`.
 
+## CI
+
+A GitHub Actions workflow (`.github/workflows/validate.yml`) runs on every push and weekly (Mon 08:00 UTC) to:
+
+1. Validate `settings.json` parses and contains all required keys.
+2. Install the latest Gemini CLI from npm.
+3. Copy `settings.json` into `~/.gemini/` (the CLI reads from there, not the repo checkout).
+4. Run a live API query to confirm `gemini-3.7-flash` is the model actually used.
+
+The weekly cron catches silent breakage from CLI updates — npm `@latest` in CI means each run pulls the newest CLI version, alerting you before you hit it locally.
+
+Requires the `GEMINI_API_KEY` repository secret (set via `gh secret set GEMINI_API_KEY --repo berrystblues/gemini-cli-config --body "$KEY"`).
+
 ## Notes
 
 - The CLI v0.56.0 predates Gemini 3.7 Flash (Aug 2026). The model ID passes through to the API correctly, but the CLI's built-in model definitions only go up to `gemini-3.5-flash`. The custom `modelConfigs` entries bridge this gap.
-- When a future CLI release adds native `gemini-3.7-flash` support, the custom `modelConfigs` entries and `experimental.dynamicModelConfiguration` can be removed.
+- **Upgrade landmine:** When a future CLI release adds native `gemini-3.7-flash` support, the `experimental.dynamicModelConfiguration` setting and custom `modelConfigs` entries can be removed. But verify first — if the CLI still has the flash-remapping logic and 3.7 isn't in its known-models list, removing the dynamic config flag will silently remap back to `gemini-3.5-flash`. The CI workflow catches this.
 - The `GEMINI_MODEL` environment variable overrides `model.name` in settings.json if set.
 - The `--model` / `-m` flag overrides everything.
