@@ -53,15 +53,36 @@ export GEMINI_CLI_TRUST_WORKSPACE=true
 
 ## Verification
 
-After setup, verify the model is correct:
+After setup, verify the model and thinking are active. The CLI's JSON output is minimal — just `response`, `session_id`, and `stats` — so the confirmation lives inside `stats.models`.
 
 ```bash
-gemini -p "What is 2+2? Answer in one word." --output-format json --skip-trust | jq '.stats.models | keys'
+export GEMINI_API_KEY=$(op read "op://Personal/Google API Key/password")
+export GEMINI_CLI_TRUST_WORKSPACE=true
+
+gemini -p "What is 2+2? Show your reasoning." --output-format json --model gemini-3.7-flash \
+  | python3 -c "import json,sys; d=json.load(sys.stdin); s=d['stats'] if isinstance(d['stats'],dict) else json.loads(d['stats']); m=s['models']; print('Model:', list(m.keys())); k=list(m.keys())[0]; print('Thinking tokens:', m[k]['tokens']['thoughts']); print('Errors:', m[k]['api']['totalErrors'])"
 ```
 
-Expected output: `["gemini-3.7-flash"]`
+Expected output:
 
-The `stats.models` object keys show which model actually handled the request. If you see `gemini-3.5-flash` instead, the `experimental.dynamicModelConfiguration` setting is not taking effect.
+```
+Model: ['gemini-3.7-flash']
+Thinking tokens: 56
+Errors: 0
+```
+
+If you see `gemini-3.5-flash` in the model list, the `experimental.dynamicModelConfiguration` setting is not taking effect. If thinking tokens is `0`, the `includeThoughts` config from the `chat-base-3` alias isn't being applied — check that `modelConfigs.aliases["gemini-3.7-flash"]` extends `chat-base-3`.
+
+### Verified results (2026-08-22)
+
+| Check | Result |
+|---|---|
+| Model | `gemini-3.7-flash` (not remapped to 3.5-flash) |
+| Thinking tokens | 56 (extended thinking active) |
+| API errors | 0 |
+| Latency | ~2.2s |
+| Input tokens | 26,534 (includes system prompt + tool definitions) |
+| Response | Correct (`4`) with step-by-step reasoning |
 
 ## Thinking levels
 
