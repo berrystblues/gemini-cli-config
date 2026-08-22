@@ -50,6 +50,11 @@ jobs:
           print('All required keys present and correct')
           "
 
+      - name: Install settings.json
+        run: |
+          mkdir -p ~/.gemini
+          cp settings.json ~/.gemini/settings.json
+
       - name: Verify CLI recognizes the model
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
