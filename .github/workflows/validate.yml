@@ -1,0 +1,73 @@
+name: Validate Config
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Gemini CLI
+        run: npm install -g @google/gemini-cli@latest
+
+      - name: Validate settings.json parses
+        run: |
+          python3 -c "import json; json.load(open('settings.json')); print('settings.json: valid')"
+
+      - name: Validate required keys present
+        run: |
+          python3 -c "
+          import json, sys
+          s = json.load(open('settings.json'))
+          errors = []
+          if s.get('model', {}).get('name') != 'gemini-3.7-flash':
+              errors.append('model.name should be gemini-3.7-flash')
+          if not s.get('experimental', {}).get('dynamicModelConfiguration'):
+              errors.append('experimental.dynamicModelConfiguration should be true')
+          alias = s.get('modelConfigs', {}).get('aliases', {}).get('gemini-3.7-flash', {})
+          if not alias:
+              errors.append('modelConfigs.aliases.gemini-3.7-flash missing')
+          elif alias.get('extends') != 'chat-base-3':
+              errors.append('alias should extend chat-base-3')
+          thinking = alias.get('modelConfig', {}).get('generateContentConfig', {}).get('thinkingConfig', {})
+          if not thinking.get('thinkingLevel'):
+              errors.append('thinkingConfig.thinkingLevel missing')
+          defn = s.get('modelConfigs', {}).get('modelDefinitions', {}).get('gemini-3.7-flash', {})
+          if not defn:
+              errors.append('modelConfigs.modelDefinitions.gemini-3.7-flash missing')
+          if errors:
+              for e in errors: print(f'  - {e}')
+              sys.exit(1)
+          print('All required keys present and correct')
+          "
+
+      - name: Verify CLI recognizes the model
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "GEMINI_API_KEY secret not set — skipping live API test"
+            exit 0
+          fi
+          gemini -p "Reply with OK" --output-format json --skip-trust 2>&1 | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          if data.get('error'):
+              print(f'Error: {data[\"error\"]}')
+              sys.exit(1)
+          models = list(data.get('stats', {}).get('models', {}).keys())
+          print(f'Models used: {models}')
+          if 'gemini-3.7-flash' not in models:
+              print('FAIL: gemini-3.7-flash not in models used')
+              sys.exit(1)
+          print('PASS: gemini-3.7-flash confirmed')
+          "
