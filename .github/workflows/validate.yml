@@ -53,16 +53,27 @@ jobs:
       - name: Verify CLI recognizes the model
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_CLI_TRUST_WORKSPACE: 'true'
         run: |
           if [ -z "$GEMINI_API_KEY" ]; then
             echo "GEMINI_API_KEY secret not set — skipping live API test"
             exit 0
           fi
-          gemini -p "Reply with OK" --output-format json --skip-trust 2>&1 | python3 -c "
+          OUTPUT=$(gemini -p "Reply with OK" --output-format json 2>/dev/null)
+          echo "$OUTPUT" | python3 -c "
           import json, sys
-          data = json.load(sys.stdin)
+          raw = sys.stdin.read().strip()
+          if not raw:
+              print('FAIL: No output from gemini CLI')
+              sys.exit(1)
+          try:
+              data = json.loads(raw)
+          except json.JSONDecodeError:
+              print('FAIL: Output was not valid JSON:')
+              print(raw[:500])
+              sys.exit(1)
           if data.get('error'):
-              print(f'Error: {data[\"error\"]}')
+              print(f'Error: {data["error"]}')
               sys.exit(1)
           models = list(data.get('stats', {}).get('models', {}).keys())
           print(f'Models used: {models}')
