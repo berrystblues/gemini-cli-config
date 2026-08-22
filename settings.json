@@ -1,0 +1,43 @@
+{
+  "mcpServers": {
+    "openrouter": {
+      "httpUrl": "https://mcp.openrouter.ai/mcp"
+    }
+  },
+  "model": {
+    "name": "gemini-3.7-flash"
+  },
+  "ui": {
+    "inlineThinkingMode": "full"
+  },
+  "experimental": {
+    "dynamicModelConfiguration": true
+  },
+  "modelConfigs": {
+    "aliases": {
+      "gemini-3.7-flash": {
+        "extends": "chat-base-3",
+        "modelConfig": {
+          "model": "gemini-3.7-flash",
+          "generateContentConfig": {
+            "thinkingConfig": {
+              "thinkingLevel": "MEDIUM"
+            }
+          }
+        }
+      }
+    },
+    "modelDefinitions": {
+      "gemini-3.7-flash": {
+        "tier": "flash",
+        "family": "gemini-3",
+        "isPreview": false,
+        "isVisible": true,
+        "features": {
+          "thinking": true,
+          "multimodalToolUse": true
+        }
+      }
+    }
+  }
+}

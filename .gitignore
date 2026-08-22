@@ -1,0 +1,21 @@
+# Secrets — never commit API keys or credentials
+*.key
+*.pem
+.env
+.env.*
+
+# Runtime / cache
+history/
+tmp/
+projects.json
+installation_id
+.DS_Store
+
+# MCP configs may contain tokens
+mcp-configs/
+
+# ECC install state (machine-specific)
+ecc-install-state.json
+
+# Skills are managed externally (symlinked from ~/.agents/skills)
+skills/
